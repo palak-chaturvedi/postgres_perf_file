@@ -1,0 +1,7 @@
+{
+    "resultdb_hosturl": "orcas-perf-dojo-results-db.postgres.database.azure.com",
+    "resultdb_dbport": "5432",
+    "resultdb_username": "meruperfadmin@orcas-perf-dojo-results-db",
+    "resultdb_password": "password123",
+    "resultdb_dbname": "merupgperf"
+}
