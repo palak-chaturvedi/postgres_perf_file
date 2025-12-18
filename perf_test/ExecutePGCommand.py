@@ -3,6 +3,7 @@ import sys
 import subprocess
 import datetime
 import re
+import time
 from PopulateResult import PopulateResult
 
 class ExecutePGCommand():
@@ -196,7 +197,7 @@ class ExecutePGCommand():
     @classmethod
     def write_in_csv(cls, elapsed_time, tps, latency, stddev):
         with open("progress_metrics.csv", "a") as csvfile:
-            csvfile.write(f"{datetime.time.strftime("%Y-%m-%d %H:%M:%S")},{elapsed_time},{tps},{latency},{stddev}\n")
+            csvfile.write(f"{time.strftime("%Y-%m-%d %H:%M:%S")},{elapsed_time},{tps},{latency},{stddev}\n")
 
     @classmethod
     def run_command(cls, _pgcommand, warmup):
@@ -222,7 +223,7 @@ class ExecutePGCommand():
                     tps = float(match.group(2))
                     latency = float(match.group(3))
                     stddev = float(match.group(4))
-                    write_in_csv(elapsed_time, tps, latency, stddev)
+                    cls.write_in_csv(elapsed_time, tps, latency, stddev)
 
                     print(f"Extracted Metrics - Elapsed Time: {elapsed_time}, TPS: {tps}, Latency: {latency}, Stddev: {stddev}")
                     # Here you can store or process the extracted metrics as needed

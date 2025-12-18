@@ -586,7 +586,7 @@ class PopulateResult:
             experiment_id = int(datetime.now().timestamp() * 1000)  # milliseconds since epoch
             
             # CSV file path
-            csv_filename = f"performance_results_{experiment_id}.csv"
+            csv_filename = f"performance_results.csv"
             
             # Check if CSV file exists to determine if we need to write headers
             write_headers = not os.path.exists(csv_filename)
