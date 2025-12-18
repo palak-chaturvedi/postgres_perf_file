@@ -197,7 +197,7 @@ class ExecutePGCommand():
     @classmethod
     def write_in_csv(cls, elapsed_time, tps, latency, stddev):
         with open("progress_metrics.csv", "a") as csvfile:
-            csvfile.write(f"{time.strftime("%Y-%m-%d %H:%M:%S")},{elapsed_time},{tps},{latency},{stddev}\n")
+            csvfile.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')},{elapsed_time},{tps},{latency},{stddev}\n")
 
     @classmethod
     def run_command(cls, _pgcommand, warmup):

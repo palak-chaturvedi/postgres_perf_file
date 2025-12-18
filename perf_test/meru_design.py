@@ -136,7 +136,7 @@ def parse_arguments():
     i = 1
     while i < len(sys.argv):
         arg = sys.argv[i]
-        if arg == "--setup-from-source":
+        if arg == "--setup-from-source" or arg == "-s":
             setup_from_source = True
         elif arg == "--repo" and i + 1 < len(sys.argv):
             repo_url = sys.argv[i + 1]
@@ -147,10 +147,12 @@ def parse_arguments():
         elif arg == "--cores" and i + 1 < len(sys.argv):
             cores = int(sys.argv[i + 1])
             i += 1
+        elif arg == "--tc" and i + 1 < len(sys.argv):
+            test_cases = sys.argv[i + 1]
+            i += 1
         elif bin_directory is None and not arg.startswith("--"):
             bin_directory = arg
-        elif not arg.startswith("--"):
-            test_cases = arg
+
         i += 1
     
     # If setup from source is requested
