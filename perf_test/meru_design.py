@@ -16,7 +16,7 @@ RESULT_CONFIG = 'config.json'
 PGSERVER_SELECT1FILE = 'select1.sql'
 
 # Default test cases
-DEFAULT_TEST_CASES = "Select1, RO_Borderline"
+DEFAULT_TEST_CASES = "Select1,Select1NPPS,RO_Borderline,RO_FullyCached,RW_FullyCached"
 
 def setup_postgres_from_source(repo_url=None, branch="master", base_dir=None):
     """Clone Postgres repo, compile, initialize, and start the server.
@@ -187,8 +187,6 @@ server["pgserver_RW_testduration"] = 600
 server["pgserver_delete_afterrun"] = 'True'
 server['pgserver_hosturl'] = 'localhost'
 server['pgserver_dbport'] = '5432'
-server['pgserver_username'] = 'palak'
-server['pgserver_password'] = 'password123'
 server['pgserver_dbname'] = 'testdb'
 server['pgserver_vcore'] = 16
 server['pgserver_testmode'] = 'prepared'

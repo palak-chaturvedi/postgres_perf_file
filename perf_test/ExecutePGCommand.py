@@ -80,7 +80,6 @@ class ExecutePGCommand():
         # Drop existing database if it exists
         pgcommand_drop_db = f"{bin_directory}/dropdb --if-exists" + \
             " -h " + targetserver["pgserver_hosturl"] + \
-            " -U " + targetserver["pgserver_username"] + \
             " -p " + targetserver["pgserver_dbport"] + \
             " " + pgserver_dbname
         
@@ -95,7 +94,6 @@ class ExecutePGCommand():
         # Create new database
         pgcommand_create_db = f"{bin_directory}/createdb" + \
             " -h " + targetserver["pgserver_hosturl"] + \
-            " -U " + targetserver["pgserver_username"] + \
             " -p " + targetserver["pgserver_dbport"] + \
             " " + pgserver_dbname
         
@@ -152,7 +150,6 @@ class ExecutePGCommand():
             checkpoint_command = f"{bin_directory}/psql" + \
                 " -h " + targetserver["pgserver_hosturl"] + \
                 " -p " + targetserver["pgserver_dbport"] + \
-                " -U " + targetserver["pgserver_username"] + \
                 " -d " + pgserver_dbname + \
                 " -c 'CHECKPOINT;'"
             
@@ -197,47 +194,35 @@ class ExecutePGCommand():
     @classmethod
     def write_in_csv(cls, elapsed_time, tps, latency, stddev):
         with open("progress_metrics.csv", "a") as csvfile:
-            csvfile.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')},{elapsed_time},{tps},{latency},{stddev}\n")
+            csvfile.write(f"{time.strftime("%Y-%m-%d %H:%M:%S")},{elapsed_time},{tps},{latency},{stddev}\n")
 
     @classmethod
     def run_command(cls, _pgcommand, warmup):
-        progress_re = re.compile(
-    r"progress:\s+([\d.]+)\s+s,\s+([\d.]+)\s+tps,\s+lat\s+([\d.]+)\s+ms\s+stddev\s+([\d.]+)"
-)
-        ''' Opens Summary and Progress file and runs the pgbench command while capturing the output
-            to this file. Summary file is later used to populate result in DB'''
-        process = subprocess.Popen(
-            _pgcommand,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True, text=True
-        )
-
-        while process.poll() is None:
-            line = process.stderr.readline()
-            if line:
-                print("progress", line.strip())
-                match = progress_re.search(line)
-                if match:
-                    elapsed_time = float(match.group(1))
-                    tps = float(match.group(2))
-                    latency = float(match.group(3))
-                    stddev = float(match.group(4))
-                    cls.write_in_csv(elapsed_time, tps, latency, stddev)
-
-                    print(f"Extracted Metrics - Elapsed Time: {elapsed_time}, TPS: {tps}, Latency: {latency}, Stddev: {stddev}")
-                    # Here you can store or process the extracted metrics as needed
-
+        if warmup == "None":
+            with open("summary_output_file_path.txt", 'w') as summary_out, \
+                    open("progress_output_file_path.txt", 'w') as progress_out:
+                init_result = subprocess.Popen(
+                    _pgcommand, shell=True, stdout=summary_out, stderr=progress_out)
+                out, err = init_result.communicate()
+        if warmup == "false":
+            with open("summary_output_file_path.txt", 'w') as summary_out, \
+                    open("progress_output_file_path.txt", 'w') as progress_out:
+                init_result = subprocess.Popen(
+                    _pgcommand, shell=True, stdout=summary_out, stderr=progress_out)
+                out, err = init_result.communicate()
+            return init_result
+        if warmup == "true":
+            with open("warmup_output_file_path.txt", 'w') as warmup_out, \
+                    open("progress_output_file_path.txt", 'w') as progress_out:
+                init_result = subprocess.Popen(
+                    _pgcommand, shell=True, stdout=warmup_out, stderr=progress_out)
+                out, err = init_result.communicate()
+            return init_result
         return False
 
     @classmethod
     def set_pgpassword(cls, pgcommand, targetserver):
         ''' Depending on Client OS, PGPASSWORD is set for non-interactive execution'''
         if sys.platform != 'win32':
-            os.system("export PGPASSWORD=" + targetserver["pgserver_password"])
-            pgcommand_final = "export PGPASSWORD='" + \
-                targetserver["pgserver_password"] + "'; " + pgcommand
-        else:
-            os.environ["PGPASSWORD"] = targetserver["pgserver_password"]
             pgcommand_final = pgcommand
         return pgcommand_final

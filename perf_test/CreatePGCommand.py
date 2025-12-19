@@ -15,9 +15,8 @@ class CreatePGCommand:
 
         # Connection parameters
         connection_params = " -h " + server["pgserver_hosturl"] + \
-                           " -p " + server["pgserver_dbport"] + \
-                           " -U " + server["pgserver_username"]
-
+                           " -p " + server["pgserver_dbport"]
+                           
         pgbench_initialize = f"{pgcommand_bin} -i" + connection_params
 
         pgbench_common = f"{pgcommand_bin} -P 10" + \

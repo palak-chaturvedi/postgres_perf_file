@@ -128,8 +128,6 @@ class Config:
     # Connection settings
     host: str = "localhost"
     port: str = "5432"
-    username: str = "palak"
-    password: str = "password123"
     dbname: str = "testdb"
     maintenance_db: str = "postgres"
     
@@ -137,8 +135,8 @@ class Config:
     scale: int = 128
     client_count: int = 128
     thread_count: int = 128
-    duration: int = 300  # 5 minutes per shared buffer change
-    wait_between_changes: int = 60  # 1 minute wait between changes
+    duration: int = 3600  # 2hr per  test
+    wait_between_changes: int = 600  # 20 minutes wait between changes
     restart_required: bool = False
     dynamic_resize: bool = True
     shared_buffer_sequence: Tuple[int, ...] = (4, 8, 12, 9, 4)
@@ -148,7 +146,7 @@ class Config:
     collection_dir: Optional[Path] = None
     
     # Test configuration
-    test_cases: Tuple[str, ...] = ("Select1", "RO_FullyCached")
+    test_cases: Tuple[str, ...] = ("Select1","Select1NPPS","RO_Borderline","RO_FullyCached","RW_FullyCached")
     test_mode: str = "prepared"  # prepared, simple, or extended
     warmup_duration: int = 120  # 2 minutes warmup
     select1_file: str = "select1.sql"
@@ -205,7 +203,6 @@ class Config:
         return {
             "pgserver_hosturl": self.host,
             "pgserver_dbport": self.port,
-            "pgserver_username": self.username,
             "pgserver_dbname": self.dbname,
             "pgserver_testmode": self.test_mode,
             "pgserver_vcore": self.vcore,
@@ -233,9 +230,7 @@ class CreatePGCommand:
 
         pgcommand_bin = f"{bin_directory}/pgbench"
         connection_params = " -h " + server["pgserver_hosturl"] + \
-                           " -p " + server["pgserver_dbport"] + \
-                           " -U " + server["pgserver_username"]
-
+                           " -p " + server["pgserver_dbport"]
         pgbench_initialize = f"{pgcommand_bin} -i" + connection_params
         pgbench_common = f"{pgcommand_bin} -P 2" + \
             " -M " + server["pgserver_testmode"] + connection_params
@@ -332,12 +327,6 @@ class DatabaseManager:
     def __init__(self, config: Config):
         self.config = config
     
-    def _env_with_password(self) -> dict[str, str]:
-        """Create environment with PGPASSWORD set."""
-        env = os.environ.copy()
-        env["PGPASSWORD"] = self.config.password
-        return env
-    
     def execute_sql(self, sql: str, timeout: int = 10, database: Optional[str] = None) -> Tuple[bool, str]:
         """Execute SQL and return (success, output)."""
         target_db = database or self.config.dbname
@@ -345,7 +334,6 @@ class DatabaseManager:
             str(self.config.postgres_bin / "psql"),
             "-h", self.config.host,
             "-p", self.config.port,
-            "-U", self.config.username,
             "-d", target_db,
             "-t", "-c", sql,
         ]
@@ -353,7 +341,7 @@ class DatabaseManager:
         try:
             result = subprocess.run(
                 cmd, capture_output=True, text=True,
-                timeout=timeout, env=self._env_with_password(), check=False,
+                timeout=timeout, check=False,
             )
         except subprocess.TimeoutExpired:
             return False, "SQL timeout"
@@ -381,12 +369,12 @@ class DatabaseManager:
         init_cmd = [
             str(self.config.postgres_bin / "pgbench"),
             "-h", self.config.host, "-p", self.config.port,
-            "-U", self.config.username, "-i", "-s", str(self.config.scale),
+         "-i", "-s", str(self.config.scale),
             self.config.dbname,
         ]
         LOGGER.info("[DatabaseManager] Initializing pgbench (scale=%s)", self.config.scale)
         result = subprocess.run(
-            init_cmd, capture_output=True, text=True, env=self._env_with_password(),
+            init_cmd, capture_output=True, text=True,
         )
         if result.returncode != 0:
             raise RuntimeError(f"pgbench init failed: {result.stderr.strip()}")
@@ -452,15 +440,16 @@ class BenchmarkRunner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            env=self.db_manager._env_with_password(),
         )
+
+        print("outpt", process.stdout.readline())
+
 
         try:
             while not stop_event.is_set():
                 line = process.stderr.readline()
                 if not line:
                     break
-                
                 if line.strip():
                     LOGGER.debug("[BenchmarkRunner] %s output: %s", run_type, line.strip())
                 
@@ -524,7 +513,6 @@ class BenchmarkRunner:
                     shell=True,
                     capture_output=True,
                     text=True,
-                    env=self.db_manager._env_with_password(),
                 )
                 if result.returncode != 0:
                     LOGGER.error("[BenchmarkRunner] Initialization failed: %s", result.stderr)
